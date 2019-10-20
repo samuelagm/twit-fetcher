@@ -12,7 +12,7 @@ import (
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
-	"github.com/go-resty/resty"
+	"gopkg.in/resty.v1"
 )
 
 type report struct {
