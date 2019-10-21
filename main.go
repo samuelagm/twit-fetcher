@@ -141,5 +141,4 @@ func main() {
 
 	fmt.Println("Stopping Stream...")
 	stream.Stop()
-
 }
