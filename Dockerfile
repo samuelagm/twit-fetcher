@@ -1,28 +1,10 @@
-# Dockerfile References: https://docs.docker.com/engine/reference/builder/
-
-# Start from the latest golang base image
-FROM golang:latest
-
-# Add Maintainer Info
-LABEL maintainer="Samuel Agbonkpolo <samuelagm@gmail.com>"
-
-# Set the Current Working Directory inside the container
+# iron/go:dev is the alpine image with the go tools added
+FROM iron/go:dev
 WORKDIR /app
-
-# Copy go mod and sum files
-COPY go.mod go.sum ./
-
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-RUN go mod download
-
-# Copy the source from the current directory to the Working Directory inside the container
-COPY . .
-
-# Build the Go app
-RUN go build -o main .
-
-# Expose port 8080 to the outside world
-EXPOSE 8080
-
-# Command to run the executable
-CMD ["./main"]
+# Set an env var that matches your github repo name, replace treeder/dockergo here with your repo name
+ENV SRC_DIR=/go/src/github.com/samuelagm/ccsi-tf/
+# Add the source code:
+ADD . $SRC_DIR
+# Build it:
+RUN cd $SRC_DIR; go get; go build -o main; cp main /app/
+ENTRYPOINT ["./main"]

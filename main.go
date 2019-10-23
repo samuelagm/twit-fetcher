@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-
+	"net/http"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 	"gopkg.in/resty.v1"
@@ -28,6 +28,7 @@ type report struct {
 	Featured    bool     `json:"featured"`
 	Author      string   `json:"author"`
 	Time        string   `json:"time"`
+	Approved    bool     `json:"approved"`
 	Upvotes     int      `json:"upvotes"`
 	Downvotes   int      `json:"downvotes"`
 	IsVideo     bool     `json:"isVideo"`
@@ -46,7 +47,6 @@ func convertTweetImageToBase64(tweet *twitter.Tweet, reqClient *resty.Client) st
 	var image string = ""
 	url := strings.Replace(tweet.User.ProfileImageURL, "_normal", "", -1)
 	if resp, err := reqClient.R().
-		EnableTrace().
 		SetDoNotParseResponse(true).
 		Get(url); err == nil {
 		if body, err := ioutil.ReadAll(resp.RawBody()); err == nil {
@@ -69,15 +69,16 @@ func sendPost(tweet *twitter.Tweet) {
 		Loc:         "",
 		Body:        getTweetText(tweet),
 		Featured:    false,
-		Author:      "",
+		Author:      tweet.User.ScreenName,
+		Approved:    true,
 		Time:        tweet.CreatedAt,
 		Upvotes:     0,
 		Downvotes:   0,
-		isVideo:     false,
+		IsVideo:     false,
 	}
 
-	if _, err := resty.New().R().SetBody(&post).Post(apiURL + "/post/createpost"); err == nil {
-		fmt.Println("Post sent")
+	if _, err := resty.New().R().SetBody(post).Post(apiURL + "/post/createpost"); err == nil {
+		log.Println("Post sent")
 	} else {
 		log.Println(err)
 	}
@@ -103,6 +104,16 @@ func getEntityURLs(tweet *twitter.Tweet) []string {
 	return urls
 }
 
+
+func startServer(){
+	http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Tweet Fetcher is working...")
+	})
+	fmt.Println("Server starting on port 8080...")
+	http.ListenAndServe(":8080", nil)
+	
+}
+
 func main() {
 
 	config := oauth1.NewConfig("vizBLoVyy7jCO6YodnZfPQ9uw", "cGqyg85zFBJNsQzSNPq1gRKGWoiF0tswk7cZVIYcx0QCK8hw6v")
@@ -123,7 +134,7 @@ func main() {
 	fmt.Println("Starting Stream...")
 	// FILTER
 	filterParams := &twitter.StreamFilterParams{
-		Track:         []string{"#upright4nigeria"},
+		Track:         []string{"#upright4nigeria", "#Upright4Nigeria"},
 		Language:      []string{"en"},
 		StallWarnings: twitter.Bool(true),
 	}
@@ -133,8 +144,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	go startServer()
 	go demux.HandleChan(stream.Messages)
-
+	fmt.Println("Processing Stream...")
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	log.Println(<-ch)
