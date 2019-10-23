@@ -19,7 +19,7 @@ type report struct {
 	Title       string   `json:"title"`
 	FromTwitter bool     `json:"from_twitter"`
 	Urls        []string `json:"urls"`
-	Image       string   `json:"image"`
+	Image       string   `json:"img"`
 	Anonymous   bool     `json:"anonymous"`
 	Long        float32  `json:"long"`
 	Lat         float32  `json:"lat"`
@@ -30,7 +30,7 @@ type report struct {
 	Time        string   `json:"time"`
 	Upvotes     int      `json:"upvotes"`
 	Downvotes   int      `json:"downvotes"`
-	HasVideo    bool     `json:"hasVideo"`
+	IsVideo     bool     `json:"isVideo"`
 }
 
 // Map a Go map function
@@ -62,7 +62,7 @@ func sendPost(tweet *twitter.Tweet) {
 		Title:       tweet.Text,
 		FromTwitter: true,
 		Urls:        getEntityURLs(tweet),
-		Image:       convertTweetImageToBase64(tweet, resty.New()),
+		Image:       strings.Replace(tweet.User.ProfileImageURL, "_normal", "", -1),
 		Anonymous:   true,
 		Long:        0.0,
 		Lat:         0.0,
@@ -73,7 +73,7 @@ func sendPost(tweet *twitter.Tweet) {
 		Time:        tweet.CreatedAt,
 		Upvotes:     0,
 		Downvotes:   0,
-		HasVideo:    false,
+		isVideo:     false,
 	}
 
 	if _, err := resty.New().R().SetBody(&post).Post(apiURL + "/post/createpost"); err == nil {
