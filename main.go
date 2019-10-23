@@ -76,7 +76,7 @@ func sendPost(tweet *twitter.Tweet) {
 		HasVideo:    false,
 	}
 
-	if _, err := resty.New().R().SetBody(&post).Post(apiURL + "/post/createpost"); err != nil {
+	if _, err := resty.New().R().SetBody(&post).Post(apiURL + "/post/createpost"); err == nil {
 		fmt.Println("Post sent")
 	} else {
 		log.Println(err)
