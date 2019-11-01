@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -43,19 +42,6 @@ func Map(vs []twitter.URLEntity, f func(twitter.URLEntity) string) []string {
 	return vsm
 }
 
-func convertTweetImageToBase64(tweet *twitter.Tweet, reqClient *resty.Client) string {
-	var image string = ""
-	url := strings.Replace(tweet.User.ProfileImageURL, "_normal", "", -1)
-	if resp, err := reqClient.R().
-		SetDoNotParseResponse(true).
-		Get(url); err == nil {
-		if body, err := ioutil.ReadAll(resp.RawBody()); err == nil {
-			image = base64.RawStdEncoding.EncodeToString(body)
-		}
-	}
-	return image
-}
-
 func sendPost(tweet *twitter.Tweet) {
 	apiURL := "http://www.uprightapi.cloud"
 	post := &report{
@@ -85,13 +71,16 @@ func sendPost(tweet *twitter.Tweet) {
 }
 
 func getTweetText(tweet *twitter.Tweet) string {
-	var text string
-	if tweet.ExtendedTweet != nil {
-		text = tweet.ExtendedTweet.FullText
-	} else {
-		text = tweet.Text
+	
+	if tweet.RetweetedStatus != nil{
+		tweet = tweet.RetweetedStatus
 	}
-	return text
+
+	if tweet.ExtendedTweet != nil {
+		return tweet.ExtendedTweet.FullText
+	} else {
+		return tweet.Text
+	}
 }
 
 func getEntityURLs(tweet *twitter.Tweet) []string {
@@ -116,8 +105,8 @@ func startServer(){
 
 func main() {
 
-	config := oauth1.NewConfig("vizBLoVyy7jCO6YodnZfPQ9uw", "cGqyg85zFBJNsQzSNPq1gRKGWoiF0tswk7cZVIYcx0QCK8hw6v")
-	token := oauth1.NewToken("145848213-IC11OPslrRVXRXQCE9v0YLJW1Yle5oLzlFANA5T6", "ztMup6vGkUg7rqtwOejl9zKq2uKwMJ9QabwqMheTDsz5j")
+	config := oauth1.NewConfig(os.Getenv("CONSUMER_KEY"), os.Getenv("CONSUMER_SECRET"))
+	token := oauth1.NewToken(os.Getenv("ACCESS_TOKEN"), os.Getenv("ACCESS_SECRET"))
 	httpClient := config.Client(oauth1.NoContext, token)
 
 	// Twitter client
@@ -137,6 +126,7 @@ func main() {
 		Track:         []string{"#upright4nigeria", "#Upright4Nigeria"},
 		Language:      []string{"en"},
 		StallWarnings: twitter.Bool(true),
+		
 	}
 
 	stream, err := client.Streams.Filter(filterParams)
